@@ -338,15 +338,16 @@
     import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
     /* ---------------------------------------------------------------
-       DATA — Sun configured to use sun1.jpg
+       DATA
     ----------------------------------------------------------------*/
     const celestialData = {
       name: "Sun",
       type: "G2V Main-Sequence Star",
       radius: 30,
       color: "#ffffff",
-      file: "sun1.jpg",
-      image: "sun1.jpg",
+      file: "sun1.jpeg",      // Render texture for the 3D sphere
+      cardImage: "sun.jpg",    // Preview image shown when clicked
+      image: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/The_Sun_by_the_Atmospheric_Imaging_Assembly_of_NASA%27s_Solar_Dynamics_Observatory_-_20100819.jpg/640px-The_Sun_by_the_Atmospheric_Imaging_Assembly_of_NASA%27s_Solar_Dynamics_Observatory_-_20100819.jpg",
       info: {
         "Diameter": "1,392,700 km",
         "Surface Temp": "5,500 °C",
@@ -461,7 +462,7 @@
           file: "saturn.jpg",
           image: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Saturn_during_Equinox.jpg/640px-Saturn_during_Equinox.jpg",
           info: { "Diameter": "116,460 km", "Orbit Period": "29.45 years", "Moons": "146 known", "Density": "0.687 g/cm³" },
-          desc: "Renowned for its expansive, highly reflective ring system physical of water ice particles and cosmic silicate dust.",
+          desc: "Renowned for its expansive, highly reflective ring system consisting of water ice particles and cosmic silicate dust.",
           moons: [
             {
               name: "Titan", type: "Major Moon", dist: 32, speed: 0.045, angle: 0.8, radius: 2.5,
@@ -647,14 +648,12 @@
         (tex) => onReady(finalizeTexture(tex)),
         undefined,
         () => {
-          if (remoteUrl) {
-            remoteLoader.load(
-              remoteUrl,
-              (tex) => onReady(finalizeTexture(tex)),
-              undefined,
-              () => console.warn("Texture unavailable locally and remotely:", localFile, remoteUrl)
-            );
-          }
+          remoteLoader.load(
+            remoteUrl,
+            (tex) => onReady(finalizeTexture(tex)),
+            undefined,
+            () => console.warn("Texture unavailable locally and remotely:", localFile, remoteUrl)
+          );
         }
       );
     }
@@ -683,7 +682,7 @@
     }
 
     /* ---------------------------------------------------------------
-       BUILD SUN (Loaded with sun1.jpg)
+       BUILD SUN
     ----------------------------------------------------------------*/
     const sunGeo = new THREE.SphereGeometry(celestialData.radius, 64, 64);
     const sunMat = new THREE.MeshBasicMaterial({
@@ -693,6 +692,7 @@
     const sunMesh = new THREE.Mesh(sunGeo, sunMat);
     scene.add(sunMesh);
 
+    // Rendered via sun1.jpeg
     loadTextureWithFallback(celestialData.file, celestialData.image, (tex) => {
       sunMat.map = tex;
       sunMat.needsUpdate = true;
@@ -758,7 +758,6 @@
         mat.needsUpdate = true;
       });
 
-      // Subtle atmospheric glow shell
       if (p.atmosphere) {
         const atmoGeo = new THREE.SphereGeometry(p.radius * 1.12, 32, 32);
         const atmoMat = new THREE.MeshBasicMaterial({
@@ -773,7 +772,6 @@
         scene.add(p.atmoMesh);
       }
 
-      // Saturn Rings
       if (p.hasRings) {
         const ringGeo = new THREE.RingGeometry(p.ringInner, p.ringOuter, 128, 1);
         const ringMat = new THREE.MeshBasicMaterial({
@@ -929,7 +927,7 @@
     }
 
     /* ---------------------------------------------------------------
-       UI WIRING
+       UI WIRING (IMAGE & INFO CARD)
     ----------------------------------------------------------------*/
     const infoCard = document.getElementById("info-card");
     const cardTitle = document.getElementById("card-title");
@@ -944,7 +942,9 @@
       cardType.textContent = data.type;
       cardDesc.textContent = data.desc;
 
-      const primarySrc = data.file ? `./${data.file}` : data.image;
+      // Select explicit cardImage if available (sun.jpg for Sun), otherwise standard local file or remote image
+      const imageFileName = data.cardImage || data.file;
+      const primarySrc = imageFileName ? `./${imageFileName}` : data.image;
 
       if (primarySrc) {
         imgLoader.style.display = "block";
