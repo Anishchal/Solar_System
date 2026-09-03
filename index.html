@@ -338,15 +338,15 @@
     import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
     /* ---------------------------------------------------------------
-       DATA — Sun configured to use sun1.png
+       DATA — Sun configured to use sun1.jpeg
     ----------------------------------------------------------------*/
     const celestialData = {
       name: "Sun",
       type: "G2V Main-Sequence Star",
       radius: 30,
       color: "#ffffff",
-      file: "sun1.png",
-      image: "sun1.png",
+      file: "sun1.jpeg",
+      image: "sun1.jpeg",
       info: {
         "Diameter": "1,392,700 km",
         "Surface Temp": "5,500 °C",
@@ -683,7 +683,7 @@
     }
 
     /* ---------------------------------------------------------------
-       BUILD SUN (Loaded with sun1.png)
+       BUILD SUN (Loaded with sun1.jpeg)
     ----------------------------------------------------------------*/
     const sunGeo = new THREE.SphereGeometry(celestialData.radius, 64, 64);
     const sunMat = new THREE.MeshBasicMaterial({
