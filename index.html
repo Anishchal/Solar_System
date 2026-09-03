@@ -313,7 +313,7 @@
 
     <div class="image-container">
       <span class="image-loader" id="img-loader">Loading image...</span>
-      <img id="card-img" src="" alt="Celestial Body" />
+      <img id="card-img" src="" alt="Celestial Body" referrerpolicy="no-referrer" />
     </div>
 
     <div id="card-details"></div>
@@ -338,15 +338,13 @@
     import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
     /* ---------------------------------------------------------------
-       DATA — same celestial data model as the 2D version, with each
-       body's real NASA / Wikimedia imagery now used as an actual
-       texture map on its 3D sphere ("planetary skin").
+       DATA
     ----------------------------------------------------------------*/
     const celestialData = {
       name: "Sun",
       type: "G2V Main-Sequence Star",
       radius: 30,
-      color: "#fff7ed",
+      color: "#ffffff",
       file: "sun.jpg",
       image: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/The_Sun_by_the_Atmospheric_Imaging_Assembly_of_NASA%27s_Solar_Dynamics_Observatory_-_20100819.jpg/640px-The_Sun_by_the_Atmospheric_Imaging_Assembly_of_NASA%27s_Solar_Dynamics_Observatory_-_20100819.jpg",
       info: {
@@ -615,14 +613,8 @@
 
     /* ---------------------------------------------------------------
        TEXTURE LOADING
-       Local-first with automatic online fallback:
-       1) Try ./textures/<file> (downloaded via download_textures.py/.sh)
-       2) If missing, fall back to the original Wikimedia URL
-       3) If both fail, the body just keeps its flat fallback color
-       The loading screen's progress bar tracks the LOCAL attempts only,
-       so it won't hang waiting on a slow remote fallback.
     ----------------------------------------------------------------*/
-    const TEXTURES_DIR = ""; // images expected in the SAME folder as this HTML file
+    const TEXTURES_DIR = "./"; // Relative to HTML file
 
     const manager = new THREE.LoadingManager();
     const loadText = document.getElementById("load-text");
@@ -637,8 +629,8 @@
       setTimeout(() => (loadingScreen.style.display = "none"), 500);
     };
 
-    const localLoader = new THREE.TextureLoader(manager);   // tracked by loading screen, no crossOrigin (local files)
-    const remoteLoader = new THREE.TextureLoader();          // untracked fallback, needs CORS for remote fetch
+    const localLoader = new THREE.TextureLoader(manager);
+    const remoteLoader = new THREE.TextureLoader();
     remoteLoader.crossOrigin = "anonymous";
 
     function finalizeTexture(tex) {
@@ -647,8 +639,6 @@
       return tex;
     }
 
-    // Loads localFile from ./textures/ first; if that 404s, retries the
-    // original remote URL. Calls onReady(texture) whichever succeeds.
     function loadTextureWithFallback(localFile, remoteUrl, onReady) {
       localLoader.load(
         TEXTURES_DIR + localFile,
@@ -665,23 +655,23 @@
       );
     }
 
-    // Procedural glow sprite texture for the Sun's corona
+    // Procedural glow sprite texture for the Sun's corona (fixed transparent falloff)
     function makeGlowTexture() {
       const size = 256;
       const c = document.createElement("canvas");
       c.width = c.height = size;
       const ctx = c.getContext("2d");
       const grad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-      grad.addColorStop(0, "rgba(255,244,214,0.9)");
-      grad.addColorStop(0.25, "rgba(253,186,68,0.55)");
-      grad.addColorStop(0.55, "rgba(249,115,22,0.22)");
-      grad.addColorStop(1, "rgba(2,3,8,0)");
+      grad.addColorStop(0, "rgba(255, 244, 214, 0.95)");
+      grad.addColorStop(0.2, "rgba(253, 186, 68, 0.55)");
+      grad.addColorStop(0.5, "rgba(249, 115, 22, 0.15)");
+      grad.addColorStop(1, "rgba(255, 244, 214, 0)"); // Transparent light color prevents dark artifacts
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, size, size);
       return new THREE.CanvasTexture(c);
     }
 
-    // Procedural ring texture (radial band gradient, mimics Cassini division)
+    // Procedural ring texture (Saturn)
     function makeRingTexture() {
       const size = 256;
       const c = document.createElement("canvas");
@@ -708,9 +698,10 @@
        BUILD SUN
     ----------------------------------------------------------------*/
     const sunGeo = new THREE.SphereGeometry(celestialData.radius, 64, 64);
-    const sunMat = new THREE.MeshBasicMaterial({ color: 0xfff7ed });
+    const sunMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
     const sunMesh = new THREE.Mesh(sunGeo, sunMat);
     scene.add(sunMesh);
+
     loadTextureWithFallback(celestialData.file, celestialData.image, (tex) => {
       sunMat.map = tex;
       sunMat.needsUpdate = true;
@@ -720,11 +711,13 @@
       map: makeGlowTexture(),
       color: 0xffffff,
       transparent: true,
+      depthTest: true,
       depthWrite: false,
       blending: THREE.AdditiveBlending
     });
     const glowSprite = new THREE.Sprite(glowMat);
-    glowSprite.scale.set(celestialData.radius * 7, celestialData.radius * 7, 1);
+    glowSprite.scale.set(celestialData.radius * 3.6, celestialData.radius * 3.6, 1);
+    glowSprite.renderOrder = 1;
     scene.add(glowSprite);
 
     celestialData.mesh = sunMesh;
@@ -775,7 +768,7 @@
         mat.needsUpdate = true;
       });
 
-      // subtle atmospheric glow shell for planets that have one
+      // subtle atmospheric glow shell
       if (p.atmosphere) {
         const atmoGeo = new THREE.SphereGeometry(p.radius * 1.12, 32, 32);
         const atmoMat = new THREE.MeshBasicMaterial({
@@ -843,7 +836,7 @@
     selectMesh.visible = false;
     scene.add(selectMesh);
 
-    let selected = null; // { mesh, data }
+    let selected = null;
 
     /* ---------------------------------------------------------------
        ANIMATION LOOP
@@ -910,7 +903,7 @@
       if (!downPos) return;
       const dist = Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y);
       downPos = null;
-      if (dist > 5) return; // treat as a drag, not a click
+      if (dist > 5) return;
 
       pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
       pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
@@ -944,7 +937,7 @@
     }
 
     /* ---------------------------------------------------------------
-       UI WIRING
+       UI WIRING (IMAGE & INFO CARD FIXES)
     ----------------------------------------------------------------*/
     const infoCard = document.getElementById("info-card");
     const cardTitle = document.getElementById("card-title");
@@ -959,7 +952,10 @@
       cardType.textContent = data.type;
       cardDesc.textContent = data.desc;
 
-      if (data.image) {
+      // Prefer local repository file first, then fallback to remote
+      const primarySrc = data.file ? `./${data.file}` : data.image;
+
+      if (primarySrc) {
         imgLoader.style.display = "block";
         imgLoader.textContent = "Loading image...";
         cardImg.style.opacity = "0";
@@ -968,11 +964,18 @@
           imgLoader.style.display = "none";
           cardImg.style.opacity = "1";
         };
+
         cardImg.onerror = () => {
-          imgLoader.textContent = "Image unavailable";
-          cardImg.style.opacity = "0";
+          // If local relative file fails to load, fallback to remote Wikimedia image
+          if (data.image && cardImg.src !== data.image) {
+            cardImg.src = data.image;
+          } else {
+            imgLoader.textContent = "Image unavailable";
+            cardImg.style.opacity = "0";
+          }
         };
-        cardImg.src = data.image;
+
+        cardImg.src = primarySrc;
         cardImg.alt = data.name;
       }
 
