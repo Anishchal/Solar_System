@@ -614,7 +614,7 @@
     /* ---------------------------------------------------------------
        TEXTURE LOADING
     ----------------------------------------------------------------*/
-    const TEXTURES_DIR = "./"; // Relative to HTML file
+    const TEXTURES_DIR = "./";
 
     const manager = new THREE.LoadingManager();
     const loadText = document.getElementById("load-text");
@@ -636,6 +636,8 @@
     function finalizeTexture(tex) {
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.anisotropy = 4;
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
       return tex;
     }
 
@@ -653,22 +655,6 @@
           );
         }
       );
-    }
-
-    // Procedural glow sprite texture for the Sun's corona (fixed transparent falloff)
-    function makeGlowTexture() {
-      const size = 256;
-      const c = document.createElement("canvas");
-      c.width = c.height = size;
-      const ctx = c.getContext("2d");
-      const grad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-      grad.addColorStop(0, "rgba(255, 244, 214, 0.95)");
-      grad.addColorStop(0.2, "rgba(253, 186, 68, 0.55)");
-      grad.addColorStop(0.5, "rgba(249, 115, 22, 0.15)");
-      grad.addColorStop(1, "rgba(255, 244, 214, 0)"); // Transparent light color prevents dark artifacts
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, size, size);
-      return new THREE.CanvasTexture(c);
     }
 
     // Procedural ring texture (Saturn)
@@ -695,10 +681,13 @@
     }
 
     /* ---------------------------------------------------------------
-       BUILD SUN
+       BUILD SUN (No dark spots, seams, or clipping sprite intersections)
     ----------------------------------------------------------------*/
     const sunGeo = new THREE.SphereGeometry(celestialData.radius, 64, 64);
-    const sunMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const sunMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      side: THREE.DoubleSide
+    });
     const sunMesh = new THREE.Mesh(sunGeo, sunMat);
     scene.add(sunMesh);
 
@@ -707,18 +696,18 @@
       sunMat.needsUpdate = true;
     });
 
-    const glowMat = new THREE.SpriteMaterial({
-      map: makeGlowTexture(),
-      color: 0xffffff,
+    // Inverted halo glow eliminates equatorial billboard clipping entirely
+    const glowGeo = new THREE.SphereGeometry(celestialData.radius * 1.25, 32, 32);
+    const glowMat = new THREE.MeshBasicMaterial({
+      color: 0xffaa33,
       transparent: true,
-      depthTest: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending
+      opacity: 0.22,
+      side: THREE.BackSide,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
     });
-    const glowSprite = new THREE.Sprite(glowMat);
-    glowSprite.scale.set(celestialData.radius * 3.6, celestialData.radius * 3.6, 1);
-    glowSprite.renderOrder = 1;
-    scene.add(glowSprite);
+    const glowMesh = new THREE.Mesh(glowGeo, glowMat);
+    scene.add(glowMesh);
 
     celestialData.mesh = sunMesh;
 
@@ -768,7 +757,7 @@
         mat.needsUpdate = true;
       });
 
-      // subtle atmospheric glow shell
+      // Subtle atmospheric glow shell
       if (p.atmosphere) {
         const atmoGeo = new THREE.SphereGeometry(p.radius * 1.12, 32, 32);
         const atmoMat = new THREE.MeshBasicMaterial({
@@ -783,7 +772,7 @@
         scene.add(p.atmoMesh);
       }
 
-      // rings (Saturn)
+      // Saturn Rings
       if (p.hasRings) {
         const ringGeo = new THREE.RingGeometry(p.ringInner, p.ringOuter, 128, 1);
         const ringMat = new THREE.MeshBasicMaterial({
@@ -853,6 +842,8 @@
         animTime += 0.016 * simSpeed;
         sunMesh.rotation.y += 0.0009 * simSpeed;
       }
+
+      if (glowMesh) glowMesh.position.copy(sunMesh.position);
 
       for (const p of celestialData.planets) {
         if (!isPaused) p.angle += p.speed * simSpeed * 0.4;
@@ -952,7 +943,7 @@
       cardType.textContent = data.type;
       cardDesc.textContent = data.desc;
 
-      // Prefer local repository file first, then fallback to remote
+      // Prefer local repository file first, then fall back to remote URL
       const primarySrc = data.file ? `./${data.file}` : data.image;
 
       if (primarySrc) {
