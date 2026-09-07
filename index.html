@@ -4,7 +4,20 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Interactive Solar System — Simulation & Game</title>
+  <!-- jsPDF Library for Certificate generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- Google Fonts for Certificate & Interface Styling -->
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;800;900&family=Cinzel:wght@600;700;900&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --primary: #38bdf8;
+      --primary-dark: #0284c7;
+      --accent: #ff4757;
+      --success: #22c55e;
+      --dark-bg: #020308;
+      --card-bg: rgba(13, 20, 36, 0.95);
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
@@ -13,7 +26,7 @@
     }
 
     body {
-      background-color: #020308;
+      background-color: var(--dark-bg);
       color: #e2e8f0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       overflow: hidden;
@@ -46,7 +59,7 @@
       gap: 28px;
     }
 
-    .modal-title {
+    .modal-title-main {
       font-size: 2.2rem;
       font-weight: 800;
       letter-spacing: 1px;
@@ -58,7 +71,7 @@
     .modal-subtitle {
       font-size: 1rem;
       color: #94a3b8;
-      max-width: 460px;
+      max-width: 480px;
       text-align: center;
       line-height: 1.5;
     }
@@ -84,7 +97,7 @@
       flex-direction: column;
       align-items: center;
       gap: 6px;
-      min-width: 200px;
+      min-width: 210px;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
     }
 
@@ -171,7 +184,7 @@
       right: 16px;
       width: 320px;
       max-height: calc(100vh - 32px);
-      background: rgba(13, 20, 36, 0.92);
+      background: var(--card-bg);
       backdrop-filter: blur(16px);
       border: 1px solid rgba(56, 189, 248, 0.35);
       border-radius: 14px;
@@ -326,11 +339,11 @@
       top: 16px;
       right: 16px;
       width: 320px;
-      background: rgba(13, 20, 36, 0.95);
+      background: var(--card-bg);
       backdrop-filter: blur(16px);
       border: 1px solid rgba(56, 189, 248, 0.4);
       border-radius: 14px;
-      padding: 18px;
+      padding: 16px;
       display: none;
       flex-direction: column;
       gap: 12px;
@@ -347,8 +360,15 @@
       font-weight: 600;
     }
 
+    .game-subhead {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
     .game-prompt {
-      font-size: 1.05rem;
+      font-size: 0.95rem;
       font-weight: 600;
       color: #f1f5f9;
     }
@@ -363,7 +383,7 @@
       background: #1e293b;
       border: 1px solid #334155;
       color: #f8fafc;
-      padding: 10px 14px;
+      padding: 9px 12px;
       border-radius: 8px;
       text-align: left;
       cursor: pointer;
@@ -392,7 +412,170 @@
     #game-feedback {
       font-size: 0.82rem;
       min-height: 1.2rem;
-      font-weight: 500;
+      font-weight: 600;
+    }
+
+    /* Modal Popup Overlay for Game Results */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(2, 3, 8, 0.92);
+      backdrop-filter: blur(16px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+
+    .modal-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-box {
+      background: linear-gradient(145deg, #1b263b, #090d16);
+      border-radius: 24px;
+      padding: 32px 28px;
+      text-align: center;
+      max-width: 520px;
+      width: 90%;
+      box-shadow: 0 25px 80px rgba(56, 189, 248, 0.2), 0 35px 80px rgba(0, 0, 0, 0.9);
+      border: 2px solid rgba(56, 189, 248, 0.4);
+      transform: scale(0.88);
+      transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .modal-overlay.show .modal-box {
+      transform: scale(1);
+    }
+
+    .modal-title {
+      font-family: 'Fredoka One', cursive;
+      font-size: 2rem;
+      margin-bottom: 8px;
+      letter-spacing: 0.5px;
+    }
+
+    .modal-title.success {
+      color: #38ef7d;
+      text-shadow: 0 0 20px rgba(56, 239, 125, 0.45);
+    }
+
+    .modal-title.retry {
+      color: #ff4757;
+      text-shadow: 0 0 20px rgba(255, 71, 87, 0.45);
+    }
+
+    .modal-message {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      margin-bottom: 18px;
+      line-height: 1.4;
+    }
+
+    /* Name & Email Container (For 5/5) */
+    .cert-container {
+      width: 100%;
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      text-align: left;
+    }
+
+    .cert-container label {
+      font-size: 0.82rem;
+      color: #38ef7d;
+      font-weight: 800;
+    }
+
+    .cert-input {
+      width: 100%;
+      padding: 10px 14px;
+      background: #0b111e;
+      border: 1.5px solid #0284c7;
+      border-radius: 8px;
+      color: #ffffff;
+      font-size: 0.95rem;
+      font-weight: 600;
+      outline: none;
+      margin-top: 4px;
+    }
+
+    .cert-btn-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .cert-btn {
+      flex: 1;
+      background: linear-gradient(135deg, #38ef7d, #11998e);
+      border: none;
+      color: #0b111e;
+      padding: 11px 14px;
+      font-family: 'Fredoka One', cursive;
+      font-size: 0.95rem;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+
+    .cert-btn-email {
+      background: linear-gradient(135deg, #00d2ff, #0072ff);
+      color: #ffffff;
+    }
+
+    .email-status {
+      font-size: 0.85rem;
+      margin-top: 4px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .modal-btn-row {
+      display: flex;
+      gap: 12px;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .modal-act-btn {
+      padding: 12px 24px;
+      border: 2px solid #ffffff;
+      color: #ffffff;
+      font-family: 'Fredoka One', cursive;
+      font-size: 1rem;
+      letter-spacing: 0.5px;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex: 1;
+    }
+
+    .btn-retry-style {
+      background: linear-gradient(135deg, #ff9f43, #ee5253);
+      box-shadow: 0 4px 15px rgba(238, 82, 83, 0.4);
+    }
+
+    .btn-sim-style {
+      background: linear-gradient(135deg, #00d2ff, #0072ff);
+      box-shadow: 0 4px 15px rgba(0, 210, 255, 0.4);
     }
 
     /* Loading Screen */
@@ -433,8 +616,8 @@
 
   <!-- Mode Selection Modal -->
   <div id="mode-modal">
-    <h1 class="modal-title">Interactive Solar System</h1>
-    <p class="modal-subtitle">Choose your experience: freely explore every star, planet, and moon, or test your astronomical recognition skills in a 5-body quiz challenge.</p>
+    <h1 class="modal-title-main">Interactive Solar System</h1>
+    <p class="modal-subtitle">Choose your experience: freely inspect every star, planet, and moon, or test your recognition skills in a 5-body quiz challenge.</p>
     <div class="mode-buttons">
       <button class="mode-btn" id="btn-start-sim">
         Free Simulation
@@ -452,6 +635,7 @@
     <div class="load-text" id="load-text">Loading planetary textures… 0%</div>
   </div>
 
+  <!-- Main Simulation Controls -->
   <div id="ui-container">
     <div class="title">Solar System Simulation — 3D</div>
     <div class="controls">
@@ -468,14 +652,18 @@
   <!-- Game HUD -->
   <div id="game-hud">
     <div class="game-header">
-      <span id="game-progress">Question 1 of 5</span>
+      <span id="game-progress">Body 1 of 5</span>
       <span id="game-score">Score: 0 / 5</span>
+    </div>
+    <div class="game-subhead">
+      <button id="btn-game-pause" style="width: 100%;">⏸ Pause Orbit Motion</button>
     </div>
     <div class="game-prompt">Which celestial body is focused here?</div>
     <div class="quiz-options" id="quiz-options"></div>
     <div id="game-feedback"></div>
   </div>
 
+  <!-- Info Card for Free Simulation -->
   <div id="info-card">
     <div class="card-header">
       <h2 id="card-title">Body Name</h2>
@@ -497,6 +685,37 @@
 
   <div id="hint">Click any Sun, Planet, or Moon to inspect • Drag to orbit • Scroll to zoom • Right-click drag to pan</div>
 
+  <!-- Result / Certificate Modal Overlay -->
+  <div class="modal-overlay" id="resultModal">
+    <div class="modal-box">
+      <h2 class="modal-title" id="modalTitle">Challenge Complete</h2>
+      <p class="modal-message" id="modalMessage">Your result description goes here.</p>
+
+      <!-- 5/5 Winner Name & Email Form -->
+      <div class="cert-container" id="certContainer" style="display: none;">
+        <div>
+          <label for="userNameInput">Astrogator Full Name:</label>
+          <input type="text" id="userNameInput" class="cert-input" placeholder="e.g., Jane Doe">
+        </div>
+        <div>
+          <label for="userEmailInput">Email Address:</label>
+          <input type="email" id="userEmailInput" class="cert-input" placeholder="e.g., explorer@space.edu">
+        </div>
+
+        <div class="cert-btn-group">
+          <button class="cert-btn" id="btn-cert-download">📥 Download Certificate</button>
+          <button class="cert-btn cert-btn-email" id="btn-cert-email">✉️ Send Certificate</button>
+        </div>
+        <div id="emailStatus" class="email-status"></div>
+      </div>
+
+      <!-- Action Button Controls -->
+      <div class="modal-btn-row" id="modalBtnRow">
+        <!-- Buttons injected dynamically based on score -->
+      </div>
+    </div>
+  </div>
+
   <canvas id="space"></canvas>
 
   <script type="importmap">
@@ -513,7 +732,7 @@
     import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
     /* ---------------------------------------------------------------
-       DATA
+       DATA DEFINITION
     ----------------------------------------------------------------*/
     const celestialData = {
       name: "Sun",
@@ -1009,9 +1228,10 @@
     scene.add(selectMesh);
 
     /* ---------------------------------------------------------------
-       ANIMATION LOOP
+       ANIMATION & ORBIT LOOP
     ----------------------------------------------------------------*/
     let isPaused = false;
+    let isGamePaused = false; // Motion pause specific to Game Mode
     let simSpeed = 1;
     let animTime = 0;
     let focusTarget = null;
@@ -1021,7 +1241,9 @@
     function animate() {
       requestAnimationFrame(animate);
 
-      if (!isPaused) {
+      const motionActive = currentMode === "sim" ? !isPaused : !isGamePaused;
+
+      if (motionActive) {
         animTime += 0.016 * simSpeed;
         sunMesh.rotation.y += 0.0009 * simSpeed;
       }
@@ -1029,21 +1251,21 @@
       if (glowMesh) glowMesh.position.copy(sunMesh.position);
 
       for (const p of celestialData.planets) {
-        if (!isPaused) p.angle += p.speed * simSpeed * 0.4;
+        if (motionActive) p.angle += p.speed * simSpeed * 0.4;
         const x = Math.cos(p.angle) * p.dist;
         const z = Math.sin(p.angle) * p.dist;
         p.mesh.position.set(x, 0, z);
-        if (!isPaused) p.mesh.rotation.y += 0.006 * simSpeed;
+        if (motionActive) p.mesh.rotation.y += 0.006 * simSpeed;
 
         if (p.atmoMesh) p.atmoMesh.position.set(x, 0, z);
         if (p.ringMesh) p.ringMesh.position.set(x, 0, z);
 
         for (const m of p.moons) {
-          if (!isPaused) m.angle += m.speed * simSpeed * 0.8;
+          if (motionActive) m.angle += m.speed * simSpeed * 0.8;
           const mx = x + Math.cos(m.angle) * m.dist;
           const mz = z + Math.sin(m.angle) * m.dist;
           m.mesh.position.set(mx, 0, mz);
-          if (!isPaused) m.mesh.rotation.y += 0.01 * simSpeed;
+          if (motionActive) m.mesh.rotation.y += 0.01 * simSpeed;
         }
       }
 
@@ -1192,8 +1414,10 @@
     });
 
     /* ---------------------------------------------------------------
-       GAME MODE LOGIC (5 Random Targets, 1 Attempt Each)
+       GAME MODE LOGIC
     ----------------------------------------------------------------*/
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzVRWiSTUy2SAZ36PYm7-sclk367qqC7a50jT6Q7Ch05ET8W42DYSa3vvusde03_jB9/exec";
+
     const modeModal = document.getElementById("mode-modal");
     const gameHud = document.getElementById("game-hud");
     const gameProgress = document.getElementById("game-progress");
@@ -1202,13 +1426,28 @@
     const gameFeedback = document.getElementById("game-feedback");
     const hint = document.getElementById("hint");
     const uiContainer = document.getElementById("ui-container");
+    const btnGamePause = document.getElementById("btn-game-pause");
+
+    const resultModal = document.getElementById("resultModal");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalMessage = document.getElementById("modalMessage");
+    const certContainer = document.getElementById("certContainer");
+    const modalBtnRow = document.getElementById("modalBtnRow");
+    const emailStatus = document.getElementById("emailStatus");
 
     let quizQueue = [];
     let currentQuizIndex = 0;
     let score = 0;
 
+    btnGamePause.addEventListener("click", () => {
+      isGamePaused = !isGamePaused;
+      btnGamePause.textContent = isGamePaused ? "▶ Resume Orbit Motion" : "⏸ Pause Orbit Motion";
+      btnGamePause.style.background = isGamePaused ? "#0284c7" : "#1e293b";
+    });
+
     function startSimulationMode() {
       currentMode = "sim";
+      resultModal.classList.remove("show");
       modeModal.style.display = "none";
       gameHud.style.display = "none";
       uiContainer.style.display = "flex";
@@ -1218,15 +1457,20 @@
 
     function startGameMode() {
       currentMode = "game";
+      isGamePaused = false;
+      btnGamePause.textContent = "⏸ Pause Orbit Motion";
+      btnGamePause.style.background = "#1e293b";
+
+      resultModal.classList.remove("show");
       modeModal.style.display = "none";
       hideInfoCard();
       deselectBody();
       uiContainer.style.display = "none";
       hint.style.display = "block";
-      hint.textContent = "Observe the celestial body currently focused in the camera, then choose your answer.";
+      hint.textContent = "Observe the celestial body focused in the viewport, then select the matching name.";
       gameHud.style.display = "flex";
 
-      // Pick 5 unique random bodies
+      // Select 5 random unique celestial targets
       const shuffled = [...pickables].sort(() => Math.random() - 0.5);
       quizQueue = shuffled.slice(0, 5);
       currentQuizIndex = 0;
@@ -1238,8 +1482,7 @@
       focusTarget = entity;
       const targetPos = entity.mesh.position;
       const offsetDist = Math.max(entity.data.radius * 3.4, 25);
-      
-      // Smoothly reposition camera facing the body
+
       camera.position.set(
         targetPos.x + offsetDist * 0.8,
         targetPos.y + offsetDist * 0.4,
@@ -1251,18 +1494,17 @@
 
     function loadNextQuestion() {
       if (currentQuizIndex >= quizQueue.length) {
-        finishGame();
+        showGameOverModal();
         return;
       }
 
       const target = quizQueue[currentQuizIndex];
       focusOnGameTarget(target);
 
-      gameProgress.textContent = `Target ${currentQuizIndex + 1} of 5`;
+      gameProgress.textContent = `Body ${currentQuizIndex + 1} of 5`;
       gameScore.textContent = `Score: ${score} / 5`;
       gameFeedback.textContent = "";
 
-      // Generate 1 correct + 3 distractor choices
       const distractors = pickables
         .filter((p) => p.data.name !== target.data.name)
         .sort(() => Math.random() - 0.5)
@@ -1281,7 +1523,6 @@
     }
 
     function handleAnswer(selectedChoice, correctTarget, clickedBtn) {
-      // Disable options after 1 attempt
       const allButtons = quizOptions.querySelectorAll("button");
       allButtons.forEach((b) => (b.disabled = true));
 
@@ -1306,26 +1547,204 @@
 
       gameScore.textContent = `Score: ${score} / 5`;
 
-      // Next body after 1.8 seconds
       setTimeout(() => {
         currentQuizIndex++;
         loadNextQuestion();
       }, 1800);
     }
 
-    function finishGame() {
-      gameProgress.textContent = "Game Complete!";
-      gameFeedback.style.color = "#38bdf8";
-      gameFeedback.textContent = `Final Score: ${score} out of 5!`;
+    function showGameOverModal() {
+      emailStatus.innerText = "";
+      modalBtnRow.innerHTML = "";
 
-      quizOptions.innerHTML = `
-        <button class="quiz-btn" id="btn-replay" style="text-align:center; font-weight:600; margin-top:6px;">Play Again</button>
-        <button class="quiz-btn" id="btn-to-sim" style="text-align:center; font-weight:600;">Switch to Free Simulation</button>
-      `;
+      if (score === 5) {
+        modalTitle.innerText = "🌟 Perfect Score: 5/5!";
+        modalTitle.className = "modal-title success";
+        modalMessage.innerText = "Exceptional astronomical recognition! Enter your credentials below to receive your Certificate of Accomplishment:";
+        certContainer.style.display = "flex";
 
-      document.getElementById("btn-replay").onclick = startGameMode;
-      document.getElementById("btn-to-sim").onclick = startSimulationMode;
+        const btnSim = document.createElement("button");
+        btnSim.className = "modal-act-btn btn-sim-style";
+        btnSim.innerText = "Back to Simulation 🚀";
+        btnSim.onclick = startSimulationMode;
+
+        const btnRetry = document.createElement("button");
+        btnRetry.className = "modal-act-btn btn-retry-style";
+        btnRetry.innerText = "Play Again 🔄";
+        btnRetry.onclick = startGameMode;
+
+        modalBtnRow.appendChild(btnRetry);
+        modalBtnRow.appendChild(btnSim);
+      } else {
+        modalTitle.innerText = "🪐 Challenge Complete";
+        modalTitle.className = "modal-title retry";
+        modalMessage.innerText = `You correctly identified ${score} out of 5 celestial bodies. Would you like to try again or explore in the simulation?`;
+        certContainer.style.display = "none";
+
+        const btnRetry = document.createElement("button");
+        btnRetry.className = "modal-act-btn btn-retry-style";
+        btnRetry.innerText = "Try Again 🔄";
+        btnRetry.onclick = startGameMode;
+
+        const btnSim = document.createElement("button");
+        btnSim.className = "modal-act-btn btn-sim-style";
+        btnSim.innerText = "Simulation 🚀";
+        btnSim.onclick = startSimulationMode;
+
+        modalBtnRow.appendChild(btnRetry);
+        modalBtnRow.appendChild(btnSim);
+      }
+
+      resultModal.classList.add("show");
     }
+
+    /* ---------------------------------------------------------------
+       CERTIFICATE PDF GENERATION & EMAIL
+    ----------------------------------------------------------------*/
+    async function buildSolarCertificatePDF(candidateName) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({
+        orientation: "landscape",
+        unit: "mm",
+        format: "a4"
+      });
+
+      const pageWidth = 297;
+      const pageHeight = 210;
+
+      // Dark Cosmic Certificate Canvas
+      doc.setFillColor(7, 12, 24);
+      doc.rect(0, 0, pageWidth, pageHeight, "F");
+
+      // Outer & Inner Gold/Cyan Border
+      doc.setDrawColor(56, 189, 248);
+      doc.setLineWidth(1.6);
+      doc.rect(10, 10, pageWidth - 20, pageHeight - 20);
+
+      doc.setDrawColor(241, 196, 15);
+      doc.setLineWidth(0.6);
+      doc.rect(13, 13, pageWidth - 26, pageHeight - 26);
+
+      // Header Titles
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(18);
+      doc.setTextColor(56, 189, 248);
+      doc.text("SOLAR SYSTEM SIMULATION & ASTRONOMY CHALLENGE", pageWidth / 2, 38, { align: "center" });
+
+      doc.setFontSize(9);
+      doc.setTextColor(148, 163, 184);
+      doc.text("DIVISION OF PLANETARY SCIENCE & EXPLORATION", pageWidth / 2, 46, { align: "center" });
+
+      // Certificate Body Title
+      doc.setFont("times", "bold");
+      doc.setFontSize(32);
+      doc.setTextColor(255, 255, 255);
+      doc.text("CERTIFICATE OF EXCELLENCE", pageWidth / 2, 66, { align: "center" });
+
+      doc.setFontSize(14);
+      doc.setTextColor(241, 196, 15);
+      doc.text("MASTER OF CELESTIAL IDENTIFICATION", pageWidth / 2, 75, { align: "center" });
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(11);
+      doc.setTextColor(203, 213, 225);
+      doc.text("THIS CERTIFICATE IS AWARDED TO", pageWidth / 2, 88, { align: "center" });
+
+      // Student/Explorer Name
+      doc.setFont("times", "italic");
+      doc.setFontSize(30);
+      doc.setTextColor(56, 189, 248);
+      doc.text(candidateName, pageWidth / 2, 108, { align: "center" });
+
+      doc.setDrawColor(56, 189, 248);
+      doc.setLineWidth(0.8);
+      doc.line(60, 112, pageWidth - 60, 112);
+
+      // Recognition Statement
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(12);
+      doc.setTextColor(226, 232, 240);
+      doc.text("For demonstrating flawless 5/5 celestial body identification across the solar system simulation.", pageWidth / 2, 126, { align: "center" });
+
+      // Date Display
+      const now = new Date();
+      const dateStr = `Awarded: ${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10.5);
+      doc.setTextColor(148, 163, 184);
+      doc.text(dateStr, pageWidth / 2, 142, { align: "center" });
+
+      // Signatures
+      doc.setDrawColor(100, 116, 139);
+      doc.setLineWidth(0.5);
+      doc.line(40, 172, 110, 172);
+      doc.line(pageWidth - 110, 172, pageWidth - 40, 172);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(248, 250, 252);
+      doc.text("Orbital Mechanics Directorate", 75, 178, { align: "center" });
+      doc.text("Astronomical Society Review", pageWidth - 75, 178, { align: "center" });
+
+      return doc;
+    }
+
+    async function handleCertificateAction(action) {
+      const nameInput = document.getElementById("userNameInput").value.trim() || "Celestial Explorer";
+      const emailInput = document.getElementById("userEmailInput").value.trim();
+      const actionBtn = document.getElementById("btn-cert-email");
+      const safeName = nameInput.replace(/[^a-z0-9]/gi, "_").toLowerCase();
+
+      if (action === "download") {
+        emailStatus.innerText = "Generating Certificate PDF...";
+        emailStatus.style.color = "#38bdf8";
+        const doc = await buildSolarCertificatePDF(nameInput);
+        doc.save(`Solar_System_Certificate_${safeName}.pdf`);
+        emailStatus.innerText = "✓ Certificate downloaded to your device!";
+        emailStatus.style.color = "#38ef7d";
+        return;
+      }
+
+      if (action === "email") {
+        if (!emailInput || !emailInput.includes("@")) {
+          emailStatus.innerText = "⚠️ Please enter a valid email address.";
+          emailStatus.style.color = "#ff4757";
+          return;
+        }
+
+        emailStatus.innerText = "Sending request to generate certificate...";
+        emailStatus.style.color = "#38bdf8";
+        actionBtn.disabled = true;
+        actionBtn.style.opacity = "0.6";
+
+        fetch(GOOGLE_SCRIPT_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: nameInput,
+            email: emailInput,
+            achievement: "Flawless 5/5 Solar System Recognition"
+          })
+        })
+        .then(() => {
+          emailStatus.innerText = `✓ Certificate generated & sent to ${emailInput}!`;
+          emailStatus.style.color = "#38ef7d";
+          actionBtn.disabled = false;
+          actionBtn.style.opacity = "1";
+        })
+        .catch((err) => {
+          console.error("Transmission error:", err);
+          emailStatus.innerText = "⚠️ Error dispatching email.";
+          emailStatus.style.color = "#ff4757";
+          actionBtn.disabled = false;
+          actionBtn.style.opacity = "1";
+        });
+      }
+    }
+
+    document.getElementById("btn-cert-download").addEventListener("click", () => handleCertificateAction("download"));
+    document.getElementById("btn-cert-email").addEventListener("click", () => handleCertificateAction("email"));
 
     /* ---------------------------------------------------------------
        TOP-LEVEL NAVIGATION
@@ -1335,6 +1754,7 @@
 
     document.getElementById("btn-switch-mode").addEventListener("click", () => {
       modeModal.style.display = "flex";
+      resultModal.classList.remove("show");
       hideInfoCard();
       deselectBody();
     });
