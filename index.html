@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Interactive Solar System Simulation — 3D</title>
+  <title>Interactive Solar System — Simulation & Game</title>
   <style>
     * {
       box-sizing: border-box;
@@ -32,6 +32,76 @@
       cursor: grabbing;
     }
 
+    /* Entry Mode Selection Modal */
+    #mode-modal {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at center, rgba(15, 23, 42, 0.96) 0%, rgba(2, 3, 8, 0.98) 100%);
+      backdrop-filter: blur(20px);
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+    }
+
+    .modal-title {
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      color: #38bdf8;
+      text-align: center;
+      text-shadow: 0 0 24px rgba(56, 189, 248, 0.4);
+    }
+
+    .modal-subtitle {
+      font-size: 1rem;
+      color: #94a3b8;
+      max-width: 460px;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    .mode-buttons {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .mode-btn {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: #f8fafc;
+      padding: 16px 28px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 1.05rem;
+      font-weight: 600;
+      transition: all 0.25s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      min-width: 200px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .mode-btn span {
+      font-size: 0.8rem;
+      font-weight: 400;
+      color: #94a3b8;
+    }
+
+    .mode-btn:hover {
+      background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+      border-color: #38bdf8;
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(56, 189, 248, 0.25);
+    }
+
+    /* Simulation UI */
     #ui-container {
       position: absolute;
       top: 16px;
@@ -52,7 +122,7 @@
       font-size: 1.1rem;
       font-weight: 700;
       letter-spacing: 0.5px;
-      cor: #38bdf8;
+      color: #38bdf8;
     }
 
     .controls {
@@ -65,7 +135,7 @@
 
     button {
       background: #1e293b;
-      cor: #f8fafc;
+      color: #f8fafc;
       border: 1px solid #334155;
       padding: 6px 12px;
       border-radius: 6px;
@@ -76,24 +146,25 @@
 
     button:hover {
       background: #334155;
-      border-cor: #64748b;
+      border-color: #64748b;
     }
 
     input[type="range"] {
-      accent-cor: #38bdf8;
+      accent-color: #38bdf8;
       cursor: pointer;
       width: 90px;
     }
 
     select {
       background: #1e293b;
-      cor: #f8fafc;
+      color: #f8fafc;
       border: 1px solid #334155;
       padding: 5px 8px;
       border-radius: 6px;
       font-size: 0.8rem;
     }
 
+    /* Info Card */
     #info-card {
       position: absolute;
       top: 16px;
@@ -111,7 +182,7 @@
       z-index: 10;
       box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8);
       animation: fadeIn 0.25s ease-out;
-      overfw-y: auto;
+      overflow-y: auto;
     }
 
     #info-card::-webkit-scrollbar {
@@ -138,7 +209,7 @@
 
     #info-card h2 {
       font-size: 1.3rem;
-      cor: #f1f5f9;
+      color: #f1f5f9;
     }
 
     .badge-container {
@@ -154,24 +225,24 @@
       padding: 2px 8px;
       border-radius: 999px;
       background: rgba(56, 189, 248, 0.15);
-      cor: #38bdf8;
+      color: #38bdf8;
       border: 1px solid rgba(56, 189, 248, 0.3);
-      display: inline-bck;
+      display: inline-block;
       width: fit-content;
     }
 
-    #info-card .cse-btn {
+    #info-card .close-btn {
       background: transparent;
       border: none;
-      cor: #94a3b8;
+      color: #94a3b8;
       font-size: 1.25rem;
       cursor: pointer;
       padding: 0 4px;
       line-height: 1;
     }
 
-    #info-card .cse-btn:hover {
-      cor: #f1f5f9;
+    #info-card .close-btn:hover {
+      color: #f1f5f9;
     }
 
     .image-container {
@@ -179,9 +250,9 @@
       width: 100%;
       height: 155px;
       border-radius: 8px;
-      overfw: hidden;
+      overflow: hidden;
       border: 1px solid rgba(255, 255, 255, 0.12);
-      background-cor: #0b1120;
+      background-color: #0b1120;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -192,7 +263,7 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
-      display: bck;
+      display: block;
       transition: opacity 0.3s ease, transform 0.4s ease;
     }
 
@@ -200,10 +271,10 @@
       transform: scale(1.04);
     }
 
-    .image-ader {
+    .image-loader {
       position: absolute;
       font-size: 0.75rem;
-      cor: #64748b;
+      color: #64748b;
       letter-spacing: 0.5px;
     }
 
@@ -216,12 +287,12 @@
     }
 
     .detail-label {
-      cor: #94a3b8;
+      color: #94a3b8;
     }
 
     .detail-val {
       font-weight: 500;
-      cor: #e2e8f0;
+      color: #e2e8f0;
       text-align: right;
     }
 
@@ -249,6 +320,82 @@
       max-width: 90vw;
     }
 
+    /* Game HUD Overlay */
+    #game-hud {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 320px;
+      background: rgba(13, 20, 36, 0.95);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      border-radius: 14px;
+      padding: 18px;
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 30;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8);
+    }
+
+    .game-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      color: #38bdf8;
+      font-weight: 600;
+    }
+
+    .game-prompt {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #f1f5f9;
+    }
+
+    .quiz-options {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    .quiz-btn {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #f8fafc;
+      padding: 10px 14px;
+      border-radius: 8px;
+      text-align: left;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+    }
+
+    .quiz-btn:hover:not(:disabled) {
+      background: #334155;
+      border-color: #38bdf8;
+      transform: translateX(3px);
+    }
+
+    .quiz-btn.correct {
+      background: rgba(34, 197, 94, 0.25) !important;
+      border-color: #22c55e !important;
+      color: #4ade80 !important;
+    }
+
+    .quiz-btn.incorrect {
+      background: rgba(239, 68, 68, 0.25) !important;
+      border-color: #ef4444 !important;
+      color: #f87171 !important;
+    }
+
+    #game-feedback {
+      font-size: 0.82rem;
+      min-height: 1.2rem;
+      font-weight: 500;
+    }
+
+    /* Loading Screen */
     #loading-screen {
       position: absolute;
       inset: 0;
@@ -284,6 +431,22 @@
 </head>
 <body>
 
+  <!-- Mode Selection Modal -->
+  <div id="mode-modal">
+    <h1 class="modal-title">Interactive Solar System</h1>
+    <p class="modal-subtitle">Choose your experience: freely explore every star, planet, and moon, or test your astronomical recognition skills in a 5-body quiz challenge.</p>
+    <div class="mode-buttons">
+      <button class="mode-btn" id="btn-start-sim">
+        Free Simulation
+        <span>Explore, inspect & orbit freely</span>
+      </button>
+      <button class="mode-btn" id="btn-start-game">
+        Identification Game
+        <span>Identify 5 celestial bodies (1 attempt each)</span>
+      </button>
+    </div>
+  </div>
+
   <div id="loading-screen">
     <div class="spinner"></div>
     <div class="load-text" id="load-text">Loading planetary textures… 0%</div>
@@ -294,11 +457,23 @@
     <div class="controls">
       <button id="btn-pause">Pause</button>
       <button id="btn-reset">Reset View</button>
+      <button id="btn-switch-mode">Mode Menu</button>
       <label for="speed-slider">Speed:</label>
       <input type="range" id="speed-slider" min="0" max="4" step="0.1" value="1" />
       <label for="focus-select">Focus:</label>
       <select id="focus-select"></select>
     </div>
+  </div>
+
+  <!-- Game HUD -->
+  <div id="game-hud">
+    <div class="game-header">
+      <span id="game-progress">Question 1 of 5</span>
+      <span id="game-score">Score: 0 / 5</span>
+    </div>
+    <div class="game-prompt">Which celestial body is focused here?</div>
+    <div class="quiz-options" id="quiz-options"></div>
+    <div id="game-feedback"></div>
   </div>
 
   <div id="info-card">
@@ -574,7 +749,7 @@
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.07;
-    controls.minDistance = 12;
+    controls.minDistance = 6;
     controls.maxDistance = 3000;
     controls.zoomSpeed = 0.9;
     controls.target.set(0, 0, 0);
@@ -587,16 +762,13 @@
     });
 
     /* ---------------------------------------------------------------
-       LIGHTING
+       LIGHTING & STARFIELD
     ----------------------------------------------------------------*/
     scene.add(new THREE.AmbientLight(0x30405a, 0.55));
     const sunLight = new THREE.PointLight(0xfff2d6, 6.5, 0, 0.15);
     sunLight.position.set(0, 0, 0);
     scene.add(sunLight);
 
-    /* ---------------------------------------------------------------
-       STARFIELD
-    ----------------------------------------------------------------*/
     function buildStarfield() {
       const count = 4000;
       const positions = new Float32Array(count * 3);
@@ -634,10 +806,9 @@
     buildStarfield();
 
     /* ---------------------------------------------------------------
-       TEXTURE LOADING
+       TEXTURES & HELPERS
     ----------------------------------------------------------------*/
     const TEXTURES_DIR = "./";
-
     const manager = new THREE.LoadingManager();
     const loadText = document.getElementById("load-text");
     const loadingScreen = document.getElementById("loading-screen");
@@ -679,7 +850,6 @@
       );
     }
 
-    // Procedural ring texture (Saturn)
     function makeRingTexture() {
       const size = 256;
       const c = document.createElement("canvas");
@@ -703,17 +873,13 @@
     }
 
     /* ---------------------------------------------------------------
-       BUILD SUN
+       BUILD SCENE ENTITIES
     ----------------------------------------------------------------*/
     const sunGeo = new THREE.SphereGeometry(celestialData.radius, 64, 64);
-    const sunMat = new THREE.MeshBasicMaterial({
-      color: 0xffffff,
-      side: THREE.DoubleSide
-    });
+    const sunMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
     const sunMesh = new THREE.Mesh(sunGeo, sunMat);
     scene.add(sunMesh);
 
-    // Rendered via sun1.jpeg
     loadTextureWithFallback(celestialData.renderFile || `${celestialData.name.toLowerCase()}1.jpeg`, celestialData.image, (tex) => {
       sunMat.map = tex;
       sunMat.needsUpdate = true;
@@ -730,14 +896,18 @@
     });
     const glowMesh = new THREE.Mesh(glowGeo, glowMat);
     scene.add(glowMesh);
-
     celestialData.mesh = sunMesh;
 
-    /* ---------------------------------------------------------------
-       BUILD PLANETS + MOONS + RINGS + ORBIT PATHS
-    ----------------------------------------------------------------*/
     const pickables = [{ mesh: sunMesh, data: celestialData }];
     const focusSelect = document.getElementById("focus-select");
+
+    function addFocusOption(label, dataRef) {
+      const opt = document.createElement("option");
+      opt.value = label;
+      opt.textContent = label;
+      focusSelect.appendChild(opt);
+      dataRef._focusLabel = label;
+    }
     addFocusOption("Sun", celestialData);
 
     function makeOrbitLine(dist, color = 0x7dd3fc, opacity = 0.15) {
@@ -750,14 +920,6 @@
       const geo = new THREE.BufferGeometry().setFromPoints(pts);
       const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity });
       return new THREE.LineLoop(geo, mat);
-    }
-
-    function addFocusOption(label, dataRef) {
-      const opt = document.createElement("option");
-      opt.value = label;
-      opt.textContent = label;
-      focusSelect.appendChild(opt);
-      dataRef._focusLabel = label;
     }
 
     for (const p of celestialData.planets) {
@@ -774,7 +936,6 @@
       scene.add(mesh);
       p.mesh = mesh;
 
-      // Render 3D planet sphere using [planet]1.jpeg
       const planetRenderFile = p.renderFile || `${p.name.toLowerCase()}1.jpeg`;
       loadTextureWithFallback(planetRenderFile, p.image, (tex) => {
         mat.map = tex;
@@ -813,7 +974,6 @@
       pickables.push({ mesh, data: p });
       addFocusOption(p.name, p);
 
-      p.moonObjs = [];
       for (const m of p.moons) {
         const mGeo = new THREE.SphereGeometry(m.radius, 32, 32);
         const mMat = new THREE.MeshStandardMaterial({
@@ -825,7 +985,6 @@
         scene.add(mMesh);
         m.mesh = mMesh;
 
-        // Render moons via renderFile or [moon]1.jpeg fallback
         const moonRenderFile = m.renderFile || `${m.name.toLowerCase().split(' ')[0]}1.jpeg`;
         loadTextureWithFallback(moonRenderFile, m.image, (tex) => {
           mMat.map = tex;
@@ -838,9 +997,6 @@
       }
     }
 
-    /* ---------------------------------------------------------------
-       SELECTION HIGHLIGHT RING
-    ----------------------------------------------------------------*/
     const selectGeo = new THREE.SphereGeometry(1, 20, 14);
     const selectMat = new THREE.MeshBasicMaterial({
       color: 0x38bdf8,
@@ -852,8 +1008,6 @@
     selectMesh.visible = false;
     scene.add(selectMesh);
 
-    let selected = null;
-
     /* ---------------------------------------------------------------
        ANIMATION LOOP
     ----------------------------------------------------------------*/
@@ -861,6 +1015,8 @@
     let simSpeed = 1;
     let animTime = 0;
     let focusTarget = null;
+    let selected = null;
+    let currentMode = "sim"; // 'sim' | 'game'
 
     function animate() {
       requestAnimationFrame(animate);
@@ -891,7 +1047,7 @@
         }
       }
 
-      if (selected) {
+      if (selected && currentMode === "sim") {
         selectMesh.position.copy(selected.mesh.position);
         const pulse = 1 + Math.sin(animTime * 3) * 0.03;
         selectMesh.scale.setScalar(selected.data.radius * 1.4 * pulse);
@@ -907,7 +1063,7 @@
     animate();
 
     /* ---------------------------------------------------------------
-       RAYCAST CLICK SELECTION
+       SIMULATION UI & RAYCASTING
     ----------------------------------------------------------------*/
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
@@ -918,7 +1074,7 @@
     });
 
     renderer.domElement.addEventListener("pointerup", (e) => {
-      if (!downPos) return;
+      if (!downPos || currentMode === "game") return;
       const dist = Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y);
       downPos = null;
       if (dist > 5) return;
@@ -931,11 +1087,8 @@
       const hits = raycaster.intersectObjects(meshes, false);
 
       if (hits.length > 0) {
-        const hitMesh = hits[0].object;
-        const found = pickables.find((p) => p.mesh === hitMesh);
-        if (found) {
-          selectBody(found);
-        }
+        const found = pickables.find((p) => p.mesh === hits[0].object);
+        if (found) selectBody(found);
       } else {
         deselectBody();
       }
@@ -954,9 +1107,6 @@
       hideInfoCard();
     }
 
-    /* ---------------------------------------------------------------
-       UI WIRING (IMAGE & INFO CARD)
-    ----------------------------------------------------------------*/
     const infoCard = document.getElementById("info-card");
     const cardTitle = document.getElementById("card-title");
     const cardType = document.getElementById("card-type");
@@ -970,7 +1120,6 @@
       cardType.textContent = data.type;
       cardDesc.textContent = data.desc;
 
-      // Card uses cardImage (e.g. earth.jpg), falling back to renderFile or remote image
       const imageFileName = data.cardImage || data.renderFile;
       const primarySrc = imageFileName ? `./${imageFileName}` : data.image;
 
@@ -1040,6 +1189,154 @@
         focusTarget = entity;
         selectBody(entity);
       }
+    });
+
+    /* ---------------------------------------------------------------
+       GAME MODE LOGIC (5 Random Targets, 1 Attempt Each)
+    ----------------------------------------------------------------*/
+    const modeModal = document.getElementById("mode-modal");
+    const gameHud = document.getElementById("game-hud");
+    const gameProgress = document.getElementById("game-progress");
+    const gameScore = document.getElementById("game-score");
+    const quizOptions = document.getElementById("quiz-options");
+    const gameFeedback = document.getElementById("game-feedback");
+    const hint = document.getElementById("hint");
+    const uiContainer = document.getElementById("ui-container");
+
+    let quizQueue = [];
+    let currentQuizIndex = 0;
+    let score = 0;
+
+    function startSimulationMode() {
+      currentMode = "sim";
+      modeModal.style.display = "none";
+      gameHud.style.display = "none";
+      uiContainer.style.display = "flex";
+      hint.style.display = "block";
+      hint.textContent = "Click any Sun, Planet, or Moon to inspect • Drag to orbit • Scroll to zoom • Right-click drag to pan";
+    }
+
+    function startGameMode() {
+      currentMode = "game";
+      modeModal.style.display = "none";
+      hideInfoCard();
+      deselectBody();
+      uiContainer.style.display = "none";
+      hint.style.display = "block";
+      hint.textContent = "Observe the celestial body currently focused in the camera, then choose your answer.";
+      gameHud.style.display = "flex";
+
+      // Pick 5 unique random bodies
+      const shuffled = [...pickables].sort(() => Math.random() - 0.5);
+      quizQueue = shuffled.slice(0, 5);
+      currentQuizIndex = 0;
+      score = 0;
+      loadNextQuestion();
+    }
+
+    function focusOnGameTarget(entity) {
+      focusTarget = entity;
+      const targetPos = entity.mesh.position;
+      const offsetDist = Math.max(entity.data.radius * 3.4, 25);
+      
+      // Smoothly reposition camera facing the body
+      camera.position.set(
+        targetPos.x + offsetDist * 0.8,
+        targetPos.y + offsetDist * 0.4,
+        targetPos.z + offsetDist
+      );
+      controls.target.copy(targetPos);
+      controls.update();
+    }
+
+    function loadNextQuestion() {
+      if (currentQuizIndex >= quizQueue.length) {
+        finishGame();
+        return;
+      }
+
+      const target = quizQueue[currentQuizIndex];
+      focusOnGameTarget(target);
+
+      gameProgress.textContent = `Target ${currentQuizIndex + 1} of 5`;
+      gameScore.textContent = `Score: ${score} / 5`;
+      gameFeedback.textContent = "";
+
+      // Generate 1 correct + 3 distractor choices
+      const distractors = pickables
+        .filter((p) => p.data.name !== target.data.name)
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 3);
+
+      const choices = [target, ...distractors].sort(() => Math.random() - 0.5);
+
+      quizOptions.innerHTML = "";
+      choices.forEach((choice) => {
+        const btn = document.createElement("button");
+        btn.className = "quiz-btn";
+        btn.textContent = choice.data.name;
+        btn.onclick = () => handleAnswer(choice, target, btn);
+        quizOptions.appendChild(btn);
+      });
+    }
+
+    function handleAnswer(selectedChoice, correctTarget, clickedBtn) {
+      // Disable options after 1 attempt
+      const allButtons = quizOptions.querySelectorAll("button");
+      allButtons.forEach((b) => (b.disabled = true));
+
+      const isCorrect = selectedChoice.data.name === correctTarget.data.name;
+
+      if (isCorrect) {
+        score++;
+        clickedBtn.classList.add("correct");
+        gameFeedback.style.color = "#4ade80";
+        gameFeedback.textContent = "Correct! Well identified.";
+      } else {
+        clickedBtn.classList.add("incorrect");
+        gameFeedback.style.color = "#f87171";
+        gameFeedback.textContent = `Incorrect! That is ${correctTarget.data.name}.`;
+
+        allButtons.forEach((b) => {
+          if (b.textContent === correctTarget.data.name) {
+            b.classList.add("correct");
+          }
+        });
+      }
+
+      gameScore.textContent = `Score: ${score} / 5`;
+
+      // Next body after 1.8 seconds
+      setTimeout(() => {
+        currentQuizIndex++;
+        loadNextQuestion();
+      }, 1800);
+    }
+
+    function finishGame() {
+      gameProgress.textContent = "Game Complete!";
+      gameFeedback.style.color = "#38bdf8";
+      gameFeedback.textContent = `Final Score: ${score} out of 5!`;
+
+      quizOptions.innerHTML = `
+        <button class="quiz-btn" id="btn-replay" style="text-align:center; font-weight:600; margin-top:6px;">Play Again</button>
+        <button class="quiz-btn" id="btn-to-sim" style="text-align:center; font-weight:600;">Switch to Free Simulation</button>
+      `;
+
+      document.getElementById("btn-replay").onclick = startGameMode;
+      document.getElementById("btn-to-sim").onclick = startSimulationMode;
+    }
+
+    /* ---------------------------------------------------------------
+       TOP-LEVEL NAVIGATION
+    ----------------------------------------------------------------*/
+    document.getElementById("btn-start-sim").addEventListener("click", startSimulationMode);
+    document.getElementById("btn-start-game").addEventListener("click", startGameMode);
+
+    document.getElementById("btn-switch-mode").addEventListener("click", () => {
+      modeModal.style.display = "flex";
+      hideInfoCard();
+      deselectBody();
     });
   </script>
 </body>
